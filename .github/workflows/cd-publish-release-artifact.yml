@@ -1,0 +1,79 @@
+# Deploys release versions to Maven Central when a version tag (vX.Y.Z) is pushed.
+# The job pauses for manual approval in the production environment, then builds, signs with GPG,
+# and deploys the artifact using the central-publishing-maven-plugin.
+# Prevents deployment of SNAPSHOT versions and requires proper GPG and Central credentials.
+
+# Triggers on version tags (vX.Y.Z) to deploy release artifacts to Maven Central.
+# Waits for manual approval in production, verifies the version is not a SNAPSHOT,
+# signs with GPG, and publishes via the release profile.
+
+# Workflow name — user defined - can be any descriptive name.
+name: Publish Release Artifact
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  # Job ID - user defined — can be any descriptive name.
+  publish-release:
+    name: Deploy To Maven Central
+    runs-on: ubuntu-latest
+    environment: production   # pauses here for manual approval
+    # Explicit permissions required.
+    permissions:
+      # Allows the workflow to read repository source code and configuration files for analysis.
+      contents: read
+
+    steps:
+
+      # Step-1 - Checkout the repository.
+      - name: Checkout Repository
+        # Use checkout@v7.0.0 GitHub Action to clone the repository into the runner workspace (GITHUB_WORKSPACE).
+        uses: actions/checkout@v7.0.0
+
+      # Step-2 - Setup JDK.
+      - name: Setup JDK 21
+        # Use setup-java@v5.3.0 GitHub Action to install and configure the specified JDK in the runner.
+        uses: actions/setup-java@v5.3.0
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+          server-id: central
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          # matches publishingServerId in the release profile's
+          # central-publishing-maven-plugin config
+
+      # Step-3 - Import GPG key.
+      - name: Import GPG Key
+        # SonarCloud will flag the below action as a security risk and fail the analysis.
+        # Reason: External GitHub Actions and workflows should be pinned to a commit hash 'githubactions:S7637'. So we
+        # have to either suppress S7637 as Won't Fix or False Positive it in SonarCloud or use the full commit hash.
+        # v7.0.0
+        uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      # Step-4 - Deploy to Maven Central.
+      - name: Verify the version is release (not SNAPSHOT)
+        run: |
+          VERSION=$(mvn help:evaluate \
+            -Dexpression=project.version -q -DforceStdout)
+          echo "Releasing version: $VERSION"
+          if [[ $VERSION == *-SNAPSHOT ]]; then
+            echo "ERROR: Cannot release a SNAPSHOT version"
+            exit 1
+          fi
+
+      - name: Build & Deploy to Maven Central
+        run: mvn deploy -Prelease
+        env:
+          MAVEN_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          # maven-gpg-plugin 3.1.0+ auto-reads MAVEN_GPG_PASSPHRASE when
+          # --pinentry-mode loopback is set (already configured above)
