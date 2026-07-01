@@ -114,7 +114,6 @@
           <violationSeverity>warning</violationSeverity>
           <logViolationsToConsole>true</logViolationsToConsole>
           <logViolationCountToConsole>true</logViolationCountToConsole>
-          <!-- <failOnViolation>true</failOnViolation> -->
           <failOnViolation>false</failOnViolation>
         </configuration>
         <dependencies>

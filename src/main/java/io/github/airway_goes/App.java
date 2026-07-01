@@ -9,6 +9,7 @@ public class App {
      * Constructor.
      */
     public App() {
+        throw new UnsupportedOperationException("Not yet implemented.");
     }
 
     /**
