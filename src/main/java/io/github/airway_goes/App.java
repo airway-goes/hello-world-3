@@ -6,13 +6,6 @@ package io.github.airway_goes;
 public class App {
 
     /**
-     * Constructor.
-     */
-    public App() {
-        throw new UnsupportedOperationException("Not yet implemented.");
-    }
-
-    /**
      * Main method.
      *
      * @param args command line arguments.
