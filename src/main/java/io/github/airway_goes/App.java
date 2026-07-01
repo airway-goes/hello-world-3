@@ -6,12 +6,6 @@ package io.github.airway_goes;
 public class App {
 
     /**
-     * Constructor.
-     */
-    public App() {
-    }
-
-    /**
      * Main method.
      *
      * @param args command line arguments.
