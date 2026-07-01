@@ -9,6 +9,7 @@ public class App {
      * Constructor.
      */
     public App() {
+        // empty constructor just to satisfy javadoc plugin
     }
 
     /**
